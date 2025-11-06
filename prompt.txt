@@ -1,90 +1,367 @@
-# Role and Objective
-You are an intelligent onboarding agent designed to guide users through a structured onboarding process for [YOUR SYSTEM NAME]. Your primary goal is to help users successfully complete all required steps in the correct order, ensuring they reach their first "aha" moment and become productive users of the system.
+Option Explicit
 
-# Core Behaviors
-- **Persistence**: Continue working with users until their onboarding is fully complete. Do not stop until all required steps are finished or the user explicitly asks to pause.
-- **Step-by-step guidance**: Present only one step at a time and wait for user confirmation before proceeding to the next step.
-- **Dependency awareness**: Always check that prerequisite steps are completed before allowing users to proceed to dependent steps.
-- **Conversational approach**: Maintain a friendly, encouraging tone that makes onboarding feel like a helpful conversation, not a rigid checklist.
+' ===== CONFIGURATION MODULE =====
+' Define all column mappings in one place for easy maintenance
 
-# Onboarding Configuration
-## Required Steps and Dependencies
-[CONFIGURE YOUR SPECIFIC STEPS HERE - Example below]
-1. **Account Setup** (No dependencies)
-   - Verify email address
-   - Set up profile information
-   - Choose initial preferences
+Private Type ColumnMapping
+    destCol As Integer          ' Destination column number
+    destHeader As String        ' Destination column header
+    mappingType As String       ' "DIRECT", "STATIC", "CONCAT", "FORMULA", "CUSTOM"
+    sourceCol As Variant        ' Source column(s) - can be integer or array
+    staticValue As String       ' For static mappings
+    CustomFunction As String    ' Name of custom function to call
+End Type
 
-2. **System Integration** (Depends on: Account Setup)
-   - Connect required third-party tools
-   - Configure API access
-   - Test connectivity
+Private mappings() As ColumnMapping
+Private mappingCount As Integer
 
-3. **First Project Creation** (Depends on: Account Setup, System Integration)
-   - Create initial project/workspace
-   - Set up project settings
-   - Invite team members (optional)
+' ===== MAIN TRANSFORMATION SUBROUTINE =====
+Sub CreateTransformedSheet()
+    Dim wsSource As Worksheet
+    Dim wbNew As Workbook
+    Dim wsDestination As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim j As Integer
+    Dim savePath As String
+    Dim fileName As String
+    Dim startTime As Double
+    
+    startTime = Timer
+    
+    ' Set source worksheet
+    Set wsSource = ActiveSheet
+    
+    ' Validate source sheet has headers
+    If WorksheetFunction.CountA(wsSource.Rows(1)) = 0 Then
+        MsgBox "Source sheet appears to have no headers!", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Initialize column mappings
+    Call InitializeColumnMappings
+    
+    ' Find last row with data in source sheet
+    lastRow = wsSource.Cells(wsSource.Rows.Count, "A").End(xlUp).Row
+    
+    If lastRow < 2 Then
+        MsgBox "No data found in source sheet!", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Create new workbook
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    
+    Set wbNew = Workbooks.Add
+    Set wsDestination = wbNew.Worksheets(1)
+    wsDestination.Name = "Transformed Data"
+    
+    ' Create headers in destination sheet
+    For j = 1 To mappingCount
+        wsDestination.Cells(1, mappings(j).destCol).Value = mappings(j).destHeader
+    Next j
+    
+    ' Transform data row by row
+    For i = 2 To lastRow
+        Call TransformRow(wsSource, wsDestination, i)
+        
+        ' Progress indicator for large datasets
+        If i Mod 1000 = 0 Then
+            Application.StatusBar = "Processing row " & i & " of " & lastRow
+        End If
+    Next i
+    
+    ' Format headers
+    With wsDestination.Range(wsDestination.Cells(1, 1), wsDestination.Cells(1, mappingCount))
+        .Font.Bold = True
+        .Interior.Color = RGB(68, 114, 196)
+        .Font.Color = RGB(255, 255, 255)
+        .HorizontalAlignment = xlCenter
+    End With
+    
+    ' Auto-fit columns
+    wsDestination.Cells.Columns.AutoFit
+    
+    ' Add filters
+    wsDestination.Range(wsDestination.Cells(1, 1), wsDestination.Cells(1, mappingCount)).AutoFilter
+    
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    Application.StatusBar = False
+    
+    ' Prompt user to save the new file
+    fileName = "Transformed_" & Format(Now, "yyyymmdd_hhmmss") & ".xlsx"
+    savePath = Application.GetSaveAsFilename( _
+        InitialFileName:=fileName, _
+        FileFilter:="Excel Files (*.xlsx), *.xlsx", _
+        Title:="Save Transformed Data")
+    
+    If savePath <> "False" Then
+        wbNew.SaveAs fileName:=savePath, FileFormat:=xlOpenXMLWorkbook
+        MsgBox "Transformation complete!" & vbCrLf & _
+               "Rows processed: " & (lastRow - 1) & vbCrLf & _
+               "Time taken: " & Format(Timer - startTime, "0.00") & " seconds" & vbCrLf & _
+               "File saved as: " & savePath, vbInformation
+    Else
+        MsgBox "File not saved. The new workbook is still open but unsaved.", vbExclamation
+    End If
+    
+End Sub
 
-4. **Core Feature Tutorial** (Depends on: First Project Creation)
-   - Complete hands-on tutorial
-   - Perform first key action
-   - Review results and next steps
+' ===== COLUMN MAPPING CONFIGURATION =====
+' This is where you define all your mappings
+Private Sub InitializeColumnMappings()
+    mappingCount = 0
+    ReDim mappings(1 To 100) ' Adjust size based on destination columns
+    
+    ' ===== DIRECT MAPPINGS (One-to-One) =====
+    ' Syntax: AddMapping DestCol, "Header", "DIRECT", SourceCol
+    
+    Call AddMapping(5, "D5", "DIRECT", 1)      ' S1 ? D5
+    Call AddMapping(4, "D4", "DIRECT", 2)      ' S2 ? D4
+    Call AddMapping(1, "D1", "DIRECT", 5)      ' S5 ? D1
+    
+    ' Add more direct mappings:
+    ' Call AddMapping(10, "Customer_Name", "DIRECT", 8)
+    ' Call AddMapping(15, "Order_Date", "DIRECT", 12)
+    
+    
+    ' ===== STATIC VALUE MAPPINGS =====
+    ' Syntax: AddMapping DestCol, "Header", "STATIC", , "StaticValue"
+    
+    Call AddMapping(6, "D6", "STATIC", , "NEW")
+    Call AddMapping(7, "D7", "STATIC", , "CRED")
+    
+    ' Add more static mappings:
+    ' Call AddMapping(20, "Status", "STATIC", , "ACTIVE")
+    ' Call AddMapping(25, "Source_System", "STATIC", , "SAP")
+    
+    
+    ' ===== CONCATENATION MAPPINGS =====
+    ' Syntax: AddMapping DestCol, "Header", "CONCAT", Array(Col1, Col2, Col3)
+    
+    Call AddMapping(2, "D2", "CONCAT", Array(3, 4))  ' S3 & S4 ? D2
+    
+    ' Add more concatenation mappings:
+    ' Call AddMapping(30, "Full_Address", "CONCAT", Array(10, 11, 12, 13))
+    ' Call AddMapping(35, "Full_Name", "CONCAT", Array(5, 6, 7))
+    
+    
+    ' ===== FORMULA MAPPINGS =====
+    ' Syntax: AddMapping DestCol, "Header", "FORMULA", SourceCol, FormulaPattern
+    ' Use {SRC} as placeholder for source value
+    
+    Call AddMapping(8, "D8_Calculated", "FORMULA", 1, "={SRC}*1.1")
+    
+    ' Add more formula mappings:
+    ' Call AddMapping(40, "Tax_Amount", "FORMULA", 15, "={SRC}*0.18")
+    ' Call AddMapping(45, "Discounted_Price", "FORMULA", 20, "={SRC}*0.9")
+    
+    
+    ' ===== CUSTOM FUNCTION MAPPINGS =====
+    ' Syntax: AddMapping DestCol, "Header", "CUSTOM", , , "FunctionName"
+    ' You'll define the custom function separately
+    
+    Call AddMapping(3, "D3", "CUSTOM", , , "CustomTransform_D3")
+    
+    ' Add more custom mappings:
+    ' Call AddMapping(50, "Risk_Category", "CUSTOM", , , "CalculateRiskCategory")
+    ' Call AddMapping(55, "Priority_Score", "CUSTOM", , , "CalculatePriority")
+    
+    
+    ' ===== CONDITIONAL MAPPINGS =====
+    ' For complex conditional logic, use CUSTOM type
+    
+    Call AddMapping(9, "D9_Conditional", "CUSTOM", , , "ConditionalMapping_D9")
+    
+End Sub
 
-## Success Criteria
-A user is considered successfully onboarded when they have:
-- Completed all required steps in the dependency order
-- Successfully performed their first key action in the system
-- Confirmed understanding of next steps for continued usage
+' Helper function to add mappings
+Private Sub AddMapping(destCol As Integer, destHeader As String, _
+                       mappingType As String, _
+                       Optional sourceCol As Variant, _
+                       Optional staticValue As String = "", _
+                       Optional customFunc As String = "")
+    mappingCount = mappingCount + 1
+    
+    With mappings(mappingCount)
+        .destCol = destCol
+        .destHeader = destHeader
+        .mappingType = mappingType
+        .sourceCol = sourceCol
+        .staticValue = staticValue
+        .CustomFunction = customFunc
+    End With
+End Sub
 
-# Interaction Guidelines
+' ===== ROW TRANSFORMATION LOGIC =====
+Private Sub TransformRow(wsSource As Worksheet, wsDestination As Worksheet, rowNum As Long)
+    Dim j As Integer
+    Dim sourceValue As Variant
+    Dim resultValue As Variant
+    Dim cols As Variant
+    Dim k As Integer
+    
+    For j = 1 To mappingCount
+        resultValue = ""
+        
+        Select Case mappings(j).mappingType
+            
+            Case "DIRECT"
+                ' Simple one-to-one mapping
+                resultValue = wsSource.Cells(rowNum, mappings(j).sourceCol).Value
+            
+            Case "STATIC"
+                ' Static hardcoded value
+                resultValue = mappings(j).staticValue
+            
+            Case "CONCAT"
+                ' Concatenate multiple source columns
+                cols = mappings(j).sourceCol
+                resultValue = ""
+                For k = LBound(cols) To UBound(cols)
+                    If resultValue <> "" Then resultValue = resultValue & " "
+                    resultValue = resultValue & wsSource.Cells(rowNum, cols(k)).Value
+                Next k
+            
+            Case "FORMULA"
+                ' Apply formula transformation
+                sourceValue = wsSource.Cells(rowNum, mappings(j).sourceCol).Value
+                resultValue = Evaluate(Replace(mappings(j).staticValue, "{SRC}", sourceValue))
+            
+            Case "CUSTOM"
+                ' Call custom function
+                resultValue = Application.Run(mappings(j).CustomFunction, wsSource, rowNum)
+            
+        End Select
+        
+        wsDestination.Cells(rowNum, mappings(j).destCol).Value = resultValue
+    Next j
+End Sub
 
-## Step Management
-- **Before starting any step**: Confirm the user is ready and has necessary information/resources
-- **During each step**: Provide clear, actionable instructions with specific next steps
-- **After each step**: Ask for explicit confirmation of completion before proceeding
-- **Dependency checking**: Always verify prerequisites are met before allowing progression
+' ===== CUSTOM TRANSFORMATION FUNCTIONS =====
+' Define your custom logic here
 
-## Conversation Flow Patterns
-1. **Welcome and Assessment**: Greet the user and understand their role/use case
-2. **Step Introduction**: Explain what you'll accomplish together and why it matters
-3. **Guided Execution**: Walk through each step with real-time support
-4. **Progress Tracking**: Keep users informed of their progress and what's coming next
-5. **Completion Celebration**: Acknowledge successful completion and outline next steps
+Function CustomTransform_D3(wsSource As Worksheet, rowNum As Long) As Variant
+    ' Example: Combine logic from multiple columns
+    Dim val1 As Variant, val2 As Variant
+    
+    val1 = wsSource.Cells(rowNum, 6).Value  ' Example: read from column 6
+    val2 = wsSource.Cells(rowNum, 7).Value  ' Example: read from column 7
+    
+    ' Apply your custom logic
+    If IsNumeric(val1) And IsNumeric(val2) Then
+        CustomTransform_D3 = CDbl(val1) + CDbl(val2)
+    Else
+        CustomTransform_D3 = "N/A"
+    End If
+End Function
 
-## Response Structure
-For each interaction:
-1. **Status Check**: Confirm current progress and any prerequisites
-2. **Clear Action**: Provide one specific, actionable instruction
-3. **Context**: Explain why this step matters for their success
-4. **Confirmation Request**: Ask the user to confirm completion before proceeding
+Function ConditionalMapping_D9(wsSource As Worksheet, rowNum As Long) As Variant
+    ' Example: Conditional logic based on source data
+    Dim amount As Variant
+    
+    amount = wsSource.Cells(rowNum, 10).Value  ' Example: read amount from column 10
+    
+    ' Apply conditional logic
+    If IsNumeric(amount) Then
+        If CDbl(amount) > 10000 Then
+            ConditionalMapping_D9 = "HIGH"
+        ElseIf CDbl(amount) > 5000 Then
+            ConditionalMapping_D9 = "MEDIUM"
+        Else
+            ConditionalMapping_D9 = "LOW"
+        End If
+    Else
+        ConditionalMapping_D9 = "UNKNOWN"
+    End If
+End Function
 
-# Advanced Capabilities
+' Add more custom functions as needed:
+' Function CalculateRiskCategory(wsSource As Worksheet, rowNum As Long) As Variant
+'     ' Your custom logic here
+' End Function
 
-## Adaptive Guidance
-- **Role-based customization**: Tailor instructions based on user role (admin, end-user, developer, etc.)
-- **Context awareness**: Remember previous answers and customize remaining steps accordingly
-- **Error handling**: If a step fails, provide troubleshooting guidance and alternative approaches
 
-## Proactive Support
-- **Anticipate questions**: Address common concerns before users ask
-- **Provide examples**: Use specific examples relevant to their use case when helpful
-- **Offer resources**: Direct users to relevant documentation, videos, or help articles
+***********************
+Sub CreateTransformedSheet()
+    Dim wsSource As Worksheet
+    Dim wbNew As Workbook
+    Dim wsDestination As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim savePath As String
+    Dim fileName As String
+    
+    ' Set source worksheet (assumes the macro runs from the active sheet)
+    Set wsSource = ActiveSheet
+    
+    ' Find last row with data in source sheet
+    lastRow = wsSource.Cells(wsSource.Rows.Count, "A").End(xlUp).Row
+    
+    ' Create new workbook
+    Set wbNew = Workbooks.Add
+    Set wsDestination = wbNew.Worksheets(1)
+    wsDestination.Name = "Transformed Data"
+    
+    ' Add headers to destination sheet
+    wsDestination.Range("A1").Value = "D1"
+    wsDestination.Range("B1").Value = "D2"
+    wsDestination.Range("C1").Value = "D3"
+    wsDestination.Range("D1").Value = "D4"
+    wsDestination.Range("E1").Value = "D5"
+    wsDestination.Range("F1").Value = "D6"
+    wsDestination.Range("G1").Value = "D7"
+    
+    ' Copy and transform data (starting from row 2 to skip headers)
+    For i = 2 To lastRow
+        ' S5 ? D1 (Column A)
+        wsDestination.Cells(i, 1).Value = wsSource.Cells(i, 5).Value
+        
+        ' S3 and S4 ? D2 (Column B) - Concatenated with space
+        wsDestination.Cells(i, 2).Value = wsSource.Cells(i, 3).Value & " " & wsSource.Cells(i, 4).Value
+        
+        ' D3 (Column C) - Empty/Not mapped
+        wsDestination.Cells(i, 3).Value = ""
+        
+        ' S2 ? D4 (Column D)
+        wsDestination.Cells(i, 4).Value = wsSource.Cells(i, 2).Value
+        
+        ' S1 ? D5 (Column E)
+        wsDestination.Cells(i, 5).Value = wsSource.Cells(i, 1).Value
+        
+        ' D6 (Column F) - Always "NEW"
+        wsDestination.Cells(i, 6).Value = "NEW"
+        
+        ' D7 (Column G) - Always "CRED"
+        wsDestination.Cells(i, 7).Value = "CRED"
+    Next i
+    
+    ' Format headers
+    With wsDestination.Range("A1:G1")
+        .Font.Bold = True
+        .Interior.Color = RGB(200, 200, 200)
+    End With
+    
+    ' Auto-fit columns
+    wsDestination.Columns("A:G").AutoFit
+    
+    ' Prompt user to save the new file
+    fileName = "Transformed_" & Format(Now, "yyyymmdd_hhmmss") & ".xlsx"
+    savePath = Application.GetSaveAsFilename( _
+        InitialFileName:=fileName, _
+        FileFilter:="Excel Files (*.xlsx), *.xlsx", _
+        Title:="Save Transformed Data")
+    
+    ' Check if user cancelled the save dialog
+    If savePath <> "False" Then
+        wbNew.SaveAs fileName:=savePath, FileFormat:=xlOpenXMLWorkbook
+        MsgBox "Transformation complete! New file saved as: " & vbCrLf & savePath, vbInformation
+    Else
+        MsgBox "File not saved. The new workbook is still open but unsaved.", vbExclamation
+    End If
+    
+End Sub
 
-## Progress Management
-- **Track completion**: Maintain awareness of which steps have been completed successfully
-- **Handle interruptions**: If users need to pause, summarize progress and help them resume later
-- **Escalation paths**: Know when to recommend human assistance for complex issues
-
-# Communication Style
-- **Encouraging and patient**: Celebrate small wins and remain supportive if users struggle
-- **Clear and specific**: Use simple language and provide concrete next steps
-- **Contextual**: Reference their specific setup, role, or use case in explanations
-- **Interactive**: Ask questions to ensure understanding and engagement
-
-# Error Handling and Edge Cases
-- **Blocked dependencies**: If a prerequisite step fails, guide users through resolution before proceeding
-- **User confusion**: Offer to re-explain steps or provide alternative approaches
-- **Technical issues**: Provide troubleshooting steps and escalation options
-- **Incomplete information**: Ask clarifying questions to gather needed details
-
-# Example Interaction Pattern
+************************
