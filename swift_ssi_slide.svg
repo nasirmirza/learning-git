@@ -1,0 +1,93 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" font-family="Arial, 'DejaVu Sans', sans-serif">
+  <defs>
+    <linearGradient id="hdr" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0B2545"/>
+      <stop offset="1" stop-color="#16426E"/>
+    </linearGradient>
+    <linearGradient id="phoenix" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E66C7"/>
+      <stop offset="1" stop-color="#13315C"/>
+    </linearGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0B2545" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1E66C7"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="720" fill="#F4F7FB"/>
+
+  <!-- Header -->
+  <rect width="1280" height="104" fill="url(#hdr)"/>
+  <rect x="0" y="104" width="1280" height="5" fill="#2BB6A3"/>
+  <text x="56" y="56" fill="#FFFFFF" font-size="38" font-weight="700">SWIFT SSI Processing</text>
+  <text x="56" y="86" fill="#9DC0E8" font-size="19" font-weight="400">Standing Settlement Instructions &#8226; Markets</text>
+
+  <!-- Definition card -->
+  <rect x="56" y="138" width="1168" height="92" rx="12" fill="#FFFFFF" stroke="#D8E1EC" filter="url(#soft)"/>
+  <rect x="56" y="138" width="6" height="92" rx="3" fill="#2BB6A3"/>
+  <text x="84" y="172" fill="#0B2545" font-size="18" font-weight="700">What is an SSI?</text>
+  <text x="84" y="200" fill="#465A75" font-size="16.5">Pre-defined, verified settlement data &#8212; beneficiary accounts, intermediary banks &amp; currency specifications &#8212; exchanged</text>
+  <text x="84" y="222" fill="#465A75" font-size="16.5">between financial institutions to route and settle funds and securities accurately.</text>
+
+  <!-- Flow row -->
+  <!-- Node 1: Sources -->
+  <rect x="56" y="270" width="312" height="250" rx="14" fill="#FFFFFF" stroke="#D8E1EC" filter="url(#soft)"/>
+  <text x="212" y="312" text-anchor="middle" fill="#0B2545" font-size="21" font-weight="700">SSI Sources</text>
+  <line x1="92" y1="330" x2="332" y2="330" stroke="#E3E9F2"/>
+  <rect x="92" y="350" width="240" height="58" rx="8" fill="#EEF4FC"/>
+  <text x="212" y="378" text-anchor="middle" fill="#13315C" font-size="18" font-weight="700">DTCC</text>
+  <text x="212" y="398" text-anchor="middle" fill="#5A6B82" font-size="13.5">Settlement instruction feed</text>
+  <rect x="92" y="420" width="240" height="58" rx="8" fill="#EEF4FC"/>
+  <text x="212" y="448" text-anchor="middle" fill="#13315C" font-size="18" font-weight="700">SWIFT Network</text>
+  <text x="212" y="468" text-anchor="middle" fill="#5A6B82" font-size="13.5">Ingested for FX clients</text>
+
+  <!-- Arrow 1 -->
+  <line x1="376" y1="395" x2="468" y2="395" stroke="#1E66C7" stroke-width="3.5" marker-end="url(#arrow)"/>
+
+  <!-- Node 2: Phoenix (hub) -->
+  <rect x="476" y="270" width="328" height="250" rx="14" fill="url(#phoenix)" filter="url(#soft)"/>
+  <text x="640" y="318" text-anchor="middle" fill="#FFFFFF" font-size="26" font-weight="700">Phoenix</text>
+  <text x="640" y="346" text-anchor="middle" fill="#BBD4F2" font-size="15">Central Hub &amp; Repository</text>
+  <line x1="520" y1="364" x2="760" y2="364" stroke="#3C6BA5" opacity="0.6"/>
+  <text x="640" y="396" text-anchor="middle" fill="#EAF2FF" font-size="15.5">Single source of SSIs across</text>
+  <text x="640" y="418" text-anchor="middle" fill="#EAF2FF" font-size="15.5">Markets lines of business</text>
+  <rect x="520" y="442" width="240" height="52" rx="8" fill="#FFFFFF" opacity="0.14"/>
+  <text x="640" y="466" text-anchor="middle" fill="#FFFFFF" font-size="14.5" font-weight="700">Cash &amp; Securities Instructions</text>
+  <text x="640" y="485" text-anchor="middle" fill="#CFE0F5" font-size="12.5">stored, verified &amp; distributed</text>
+
+  <!-- Arrow 2 -->
+  <line x1="812" y1="395" x2="904" y2="395" stroke="#1E66C7" stroke-width="3.5" marker-end="url(#arrow)"/>
+
+  <!-- Node 3: LOBs -->
+  <rect x="912" y="270" width="312" height="250" rx="14" fill="#FFFFFF" stroke="#D8E1EC" filter="url(#soft)"/>
+  <text x="1068" y="312" text-anchor="middle" fill="#0B2545" font-size="21" font-weight="700">Consuming LOBs</text>
+  <line x1="948" y1="330" x2="1188" y2="330" stroke="#E3E9F2"/>
+  <g font-size="16.5" font-weight="700" fill="#13315C">
+    <rect x="948" y="346" width="115" height="58" rx="8" fill="#EEF4FC"/>
+    <text x="1005" y="380" text-anchor="middle">FX</text>
+    <rect x="1073" y="346" width="115" height="58" rx="8" fill="#EEF4FC"/>
+    <text x="1130" y="380" text-anchor="middle">Liquidity</text>
+    <rect x="948" y="414" width="115" height="58" rx="8" fill="#EEF4FC"/>
+    <text x="1005" y="448" text-anchor="middle">Margin</text>
+    <rect x="1073" y="414" width="115" height="58" rx="8" fill="#EEF4FC"/>
+    <text x="1130" y="441" text-anchor="middle" font-size="14">Global</text>
+    <text x="1130" y="460" text-anchor="middle" font-size="14">Collateral Mgmt</text>
+  </g>
+
+  <!-- Benefits bar -->
+  <rect x="56" y="556" width="1168" height="112" rx="14" fill="#0B2545" filter="url(#soft)"/>
+  <text x="84" y="592" fill="#2BB6A3" font-size="16" font-weight="700">WHY IT MATTERS</text>
+  <!-- benefit 1 -->
+  <text x="84" y="628" fill="#FFFFFF" font-size="17" font-weight="700">Straight-Through Processing</text>
+  <text x="84" y="650" fill="#9DC0E8" font-size="14">Automated, touch-free settlement</text>
+  <!-- divider -->
+  <line x1="470" y1="600" x2="470" y2="648" stroke="#274A72"/>
+  <text x="500" y="628" fill="#FFFFFF" font-size="17" font-weight="700">Accuracy &amp; Trust</text>
+  <text x="500" y="650" fill="#9DC0E8" font-size="14">Verified data prevents costly errors</text>
+  <line x1="830" y1="600" x2="830" y2="648" stroke="#274A72"/>
+  <text x="860" y="628" fill="#FFFFFF" font-size="17" font-weight="700">Fewer Failures</text>
+  <text x="860" y="650" fill="#9DC0E8" font-size="14">Avoids delays &amp; payment rejections</text>
+</svg>
