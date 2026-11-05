@@ -1,9 +1,655 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Page Title</title>
-  </head>
-  <body>
-    <h1>First Paragraph</h1>
-  </body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SSI Platform Design</title>
+<meta name="description" content="Design for an application to set up and manage standing settlement instructions for custody, triparty and collateral products, with the domain background it rests on.">
+<style>
+:root{
+  --paper:#F4F6F7; --card:#FFFFFF; --ink:#16202A; --muted:#566370; --rule:#D5DCE2;
+  --accent:#1F5F8B; --accent-soft:#E3EEF6; --flag:#8A4B2A; --flag-soft:#F7ECE4; --codebg:#EDF1F4;
+  --ok:#2E6B3F;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#11161B; --card:#182028; --ink:#E1E8EE; --muted:#97A5B2; --rule:#2B3640;
+    --accent:#7DB6DD; --accent-soft:#1C2E3C; --flag:#D9A07A; --flag-soft:#2E2219; --codebg:#1D2730; --ok:#8CC79B;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#11161B; --card:#182028; --ink:#E1E8EE; --muted:#97A5B2; --rule:#2B3640;
+  --accent:#7DB6DD; --accent-soft:#1C2E3C; --flag:#D9A07A; --flag-soft:#2E2219; --codebg:#1D2730; --ok:#8CC79B;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Charter","Iowan Old Style",Georgia,serif;font-size:17px;line-height:1.65}
+.wrap{max-width:50rem;margin:0 auto;padding:2.5rem 1.25rem 4rem}
+h1,h2,h3,h4,.label,.part,nav,table,figcaption,.meta,.pill,footer{font-family:"Inter","Helvetica Neue",Helvetica,Arial,system-ui,sans-serif}
+h1{font-size:2rem;line-height:1.15;font-weight:650;letter-spacing:-.02em;margin:0 0 .6rem}
+.lede{font-size:1.1rem;color:var(--muted);margin:0 0 1.5rem;max-width:40rem}
+.part{font-size:.8rem;font-weight:600;letter-spacing:.04em;color:var(--accent);margin:4rem 0 0;padding-bottom:.4rem;border-bottom:2px solid var(--accent)}
+h2{font-size:1.25rem;font-weight:620;letter-spacing:-.01em;margin:2.75rem 0 .75rem;padding-top:1rem;border-top:1px solid var(--rule)}
+.part + h2{border-top:none;margin-top:1.4rem;padding-top:0}
+h3{font-size:1.02rem;font-weight:620;margin:1.8rem 0 .5rem}
+h4{font-size:.92rem;font-weight:620;margin:1.2rem 0 .3rem;color:var(--muted)}
+p{margin:0 0 1rem} ul,ol{margin:0 0 1rem;padding-left:1.2rem} li{margin-bottom:.35rem}
+a{color:var(--accent)} a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.meta{color:var(--muted);font-size:.85rem;margin-bottom:2rem}
+.key{background:var(--accent-soft);border-left:3px solid var(--accent);padding:1rem 1.15rem;margin:1.5rem 0}
+.key p:last-child{margin:0}
+.flag{background:var(--flag-soft);border-left-color:var(--flag)}
+.label{font-size:.78rem;color:var(--muted);margin:.9rem 0 .3rem;font-weight:600}
+nav.toc{background:var(--card);border:1px solid var(--rule);padding:1rem 1.2rem;margin:0 0 2rem;font-size:.92rem}
+nav.toc ol{margin:0 0 .4rem;padding-left:1.3rem} nav.toc li{margin-bottom:.15rem}
+nav.toc .label:first-child{margin-top:0}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 0 1.25rem}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:34rem;background:var(--card)}
+th,td{text-align:left;vertical-align:top;padding:.5rem .6rem;border-bottom:1px solid var(--rule)}
+th{font-weight:600;color:var(--muted);font-size:.78rem;background:var(--paper)}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.84em;background:var(--codebg);padding:.1em .3em;border-radius:3px}
+pre{background:var(--codebg);border:1px solid var(--rule);padding:.9rem 1rem;overflow-x:auto;margin:0 0 1.25rem}
+pre code{background:none;padding:0;font-size:.78rem;line-height:1.5}
+figure{margin:1.6rem 0} figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:.8rem;color:var(--muted);margin-top:.5rem}
+.svg-box{fill:var(--card);stroke:var(--rule);stroke-width:1}
+.svg-acc-box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
+.svg-flag-box{fill:var(--flag-soft);stroke:var(--flag);stroke-width:1}
+.svg-t{fill:var(--ink);font-family:"Inter","Helvetica Neue",Arial,sans-serif;font-size:12px;font-weight:600}
+.svg-s{fill:var(--muted);font-family:"Inter","Helvetica Neue",Arial,sans-serif;font-size:10.5px}
+.svg-line{stroke:var(--muted);stroke-width:1;fill:none}
+.svg-acc{stroke:var(--accent);stroke-width:1.3;fill:none}
+.svg-dash{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3;fill:none}
+.svg-head{fill:var(--muted)} .svg-head-acc{fill:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:0 0 1.25rem}
+.card{background:var(--card);border:1px solid var(--rule);padding:.9rem 1rem}
+.card h4{margin-top:0}
+.card p:last-child,.card ul:last-child{margin-bottom:0}
+@media (max-width:640px){.grid2{grid-template-columns:1fr}}
+.pill{display:inline-block;font-size:.72rem;padding:.05rem .45rem;border:1px solid var(--rule);background:var(--card);color:var(--muted);border-radius:999px}
+footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--rule);color:var(--muted);font-size:.82rem}
+@media print{
+  :root{--paper:#fff;--card:#fff;--ink:#000;--muted:#444;--rule:#bbb;--codebg:#f2f2f2;--accent-soft:#eef4f9;--flag-soft:#f8f0ea}
+  body{font-size:10.5pt}.wrap{max-width:none;padding:0} nav.toc{display:none}
+  h2,.part{page-break-after:avoid} pre,table,figure,.card{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="svg-head"/></marker>
+    <marker id="aha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="svg-head-acc"/></marker>
+  </defs>
+</svg>
+<div class="wrap">
+
+<h1>SSI Platform Design</h1>
+<p class="lede">An application for setting up, approving and using standing settlement instructions across custody, triparty and collateral products, together with the market knowledge the design rests on.</p>
+<p class="meta">Version 1.0 · November 2026 · Author: Mirza Nasir, with Claude · Status: design for review</p>
+
+<nav class="toc" aria-label="Contents">
+  <div class="label">Part I: Domain background</div>
+  <ol>
+    <li><a href="#s1">Why settlement instructions matter here</a></li>
+    <li><a href="#s2">Products: triparty, CollateralONE, MarginDirect</a></li>
+    <li><a href="#s3">Accounts and the two settlement layers</a></li>
+    <li><a href="#s4">Messages and transaction types</a></li>
+    <li><a href="#s5">Free of payment and against payment</a></li>
+    <li><a href="#s6">Depositories and the cash leg</a></li>
+    <li><a href="#s7">Clients, funds and who instructs</a></li>
+    <li><a href="#s8">SSI standards: ALERT and the DTCC market rules</a></li>
+  </ol>
+  <div class="label">Part II: Application design</div>
+  <ol start="9">
+    <li><a href="#s9">Goals, scope and users</a></li>
+    <li><a href="#s10">Architecture</a></li>
+    <li><a href="#s11">Data model</a></li>
+    <li><a href="#s12">Reference data management</a></li>
+    <li><a href="#s13">Portal screens and behaviour</a></li>
+    <li><a href="#s14">Workflows: maker-checker, import, catalogue refresh</a></li>
+    <li><a href="#s15">Resolving an SSI</a></li>
+    <li><a href="#s16">Generating settlement messages</a></li>
+    <li><a href="#s17">Validation rules</a></li>
+    <li><a href="#s18">Security, tenancy and audit</a></li>
+    <li><a href="#s19">Service interface</a></li>
+    <li><a href="#s20">Delivery plan</a></li>
+    <li><a href="#s21">Open items and assumptions</a></li>
+    <li><a href="#s22">Artifacts and glossary</a></li>
+  </ol>
+</nav>
+
+<div class="key">
+  <p><strong>The design in four sentences.</strong> A settlement instruction says <em>where</em> securities go for one account in one market; the business event says <em>why</em> they move. The platform stores the first as a directionless, effective-dated chain keyed on a DTCC country, security type and method combination, scoped to a client, fund or account. Nothing becomes usable without a second person approving it. At message time a resolver picks the most specific active instruction, and a builder renders it into MT540 to MT543 using the event's transaction type.</p>
+</div>
+
+<!-- ================================================================== -->
+<p class="part">Part I: Domain background</p>
+
+<h2 id="s1">1. Why settlement instructions matter here</h2>
+<p>Collateral businesses run on assets being in the right account at the right time. Firms carry continuous obligations: repo financing, securities lending, variation margin and initial margin on uncleared derivatives. A triparty agent such as BNY takes over the operational half of those obligations, but it can only allocate what is already in its world. Every movement across that boundary, into a client's inventory or back out, is a settlement instruction, and every instruction depends on a correct standing settlement instruction (SSI) for that account and market.</p>
+<p>Most settlement fails trace back to reference data rather than messaging: a wrong participant number, a stale agent account, a missing market identifier. An SSI platform therefore earns its keep through three things: it only allows combinations the market supports, it forces a second pair of eyes on every change, and it resolves the same answer every time for the same question.</p>
+
+<h2 id="s2">2. Products: triparty, CollateralONE, MarginDirect</h2>
+<div class="scroll"><table>
+<tr><th>Service</th><th>What it does</th><th>Where settlement messages appear</th></tr>
+<tr><td>Triparty</td><td>BNY as agent allocates collateral, checks eligibility against each receiver's schedule, applies haircuts, marks to market daily and substitutes. Covers repo, securities lending and segregated initial margin. Runs on a Domestic platform (US securities, US hours) and a Global platform.</td><td>Only at the edges, when inventory is moved in or out. Allocation itself is a book entry reported on MT569.</td></tr>
+<tr><td>CollateralONE</td><td>Buy-side platform built on triparty: one view of a manager's assets, liabilities and opportunities across funds, with LiquidityDirect (cash into money market funds usable as collateral), LendingLite (specials-only lending), Borrow+ and a GLMX repo link.</td><td>As triparty, plus lending and outright trades on inventory.</td></tr>
+<tr><td>MarginDirect</td><td>Third-party custody model: the parties select and price collateral themselves and deliver it into BNY.</td><td>Every movement is an instruction.</td></tr>
+</table></div>
+<p>Roles: the <strong>collateral provider</strong> (pledgor, giver) posts assets; the <strong>collateral receiver</strong> (secured party, taker) receives them. A large fund is often both on the same day: posting margin to a swap dealer, posting bonds in repo, and receiving collateral against a stock loan.</p>
+
+<h2 id="s3">3. Accounts and the two settlement layers</h2>
+<figure>
+<svg viewBox="0 0 640 300" role="img" aria-label="Depository omnibus account above BNY's books, which hold the client's custody account, longbox and segregated account">
+  <rect x="120" y="12" width="400" height="60" class="svg-box"/>
+  <text x="320" y="38" text-anchor="middle" class="svg-t">Depository: Fed, DTC, Euroclear, Clearstream, T2S</text>
+  <text x="320" y="57" text-anchor="middle" class="svg-s">BNY holds one omnibus participant account per market and business line</text>
+  <line x1="320" y1="72" x2="320" y2="104" class="svg-line" marker-end="url(#ah)"/>
+  <rect x="20" y="110" width="600" height="172" class="svg-box"/>
+  <text x="320" y="134" text-anchor="middle" class="svg-t">BNY's own books: accounts in the client's name</text>
+  <rect x="42" y="156" width="170" height="104" class="svg-box"/>
+  <text x="127" y="184" text-anchor="middle" class="svg-t">Custody account</text>
+  <text x="127" y="204" text-anchor="middle" class="svg-s">free to trade, lend, deliver</text>
+  <text x="127" y="222" text-anchor="middle" class="svg-s">invisible to the</text>
+  <text x="127" y="238" text-anchor="middle" class="svg-s">collateral engine</text>
+  <rect x="236" y="156" width="170" height="104" class="svg-acc-box"/>
+  <text x="321" y="184" text-anchor="middle" class="svg-t">Longbox</text>
+  <text x="321" y="204" text-anchor="middle" class="svg-s">unencumbered inventory</text>
+  <text x="321" y="222" text-anchor="middle" class="svg-s">the only pool the engine</text>
+  <text x="321" y="238" text-anchor="middle" class="svg-s">allocates from</text>
+  <rect x="430" y="156" width="170" height="104" class="svg-box"/>
+  <text x="515" y="184" text-anchor="middle" class="svg-t">Segregated account</text>
+  <text x="515" y="204" text-anchor="middle" class="svg-s">encumbered, per receiver</text>
+  <text x="515" y="222" text-anchor="middle" class="svg-s">pledge (IM) or title</text>
+  <text x="515" y="238" text-anchor="middle" class="svg-s">transfer (repo)</text>
+  <line x1="213" y1="208" x2="233" y2="208" class="svg-acc" marker-end="url(#aha)"/>
+  <line x1="407" y1="208" x2="427" y2="208" class="svg-acc" marker-end="url(#aha)"/>
+</svg>
+<figcaption>Moving inventory from longbox to a segregated account is a book entry. Moving it from custody to longbox may or may not reach a depository; see below.</figcaption>
+</figure>
+<ul>
+  <li><strong>No client accounts at the depository.</strong> Segregation is contractual and operational, enforced on BNY's books and reconciled daily against the omnibus position.</li>
+  <li><strong>Accounts are per legal entity and per platform.</strong> A manager with 300 funds has 300 longboxes, and roughly one segregated account per fund per receiver. A fund on both Domestic and Global platforms has two longboxes.</li>
+  <li><strong>The custody to triparty hop.</strong> BNY custody and BNY triparty can hold different participant numbers at the same depository, for legal capacity, risk controls and reconciliation reasons. When they do, a move between a client's custody account and its longbox is a real depository settlement, instructed with MT542 and MT540, even though both accounts are at BNY. When both sit under the same participant account, it is an internal book entry. The data model records this explicitly (section 11).</li>
+</ul>
+
+<h3>The two instruction layers</h3>
+<figure>
+<svg viewBox="0 0 640 286" role="img" aria-label="The client sends MT542 to its custodian and MT540 to BNY; each agent creates its own instruction at the depository">
+  <rect x="240" y="12" width="160" height="44" class="svg-box"/>
+  <text x="320" y="38" text-anchor="middle" class="svg-t">Account owner</text>
+  <line x1="280" y1="56" x2="160" y2="98" class="svg-line" marker-end="url(#ah)"/>
+  <text x="176" y="80" class="svg-s">MT542</text>
+  <line x1="360" y1="56" x2="480" y2="98" class="svg-line" marker-end="url(#ah)"/>
+  <text x="438" y="80" class="svg-s">MT540</text>
+  <rect x="50" y="102" width="200" height="56" class="svg-box"/>
+  <text x="150" y="126" text-anchor="middle" class="svg-t">Delivering agent</text>
+  <text x="150" y="144" text-anchor="middle" class="svg-s">validates, earmarks, instructs</text>
+  <rect x="390" y="102" width="200" height="56" class="svg-box"/>
+  <text x="490" y="126" text-anchor="middle" class="svg-t">Receiving agent (BNY)</text>
+  <text x="490" y="144" text-anchor="middle" class="svg-s">expects, routes to longbox</text>
+  <line x1="150" y1="158" x2="242" y2="208" class="svg-acc" marker-end="url(#aha)"/>
+  <line x1="490" y1="158" x2="398" y2="208" class="svg-acc" marker-end="url(#aha)"/>
+  <rect x="240" y="212" width="160" height="56" class="svg-acc-box"/>
+  <text x="320" y="236" text-anchor="middle" class="svg-t">Depository</text>
+  <text x="320" y="254" text-anchor="middle" class="svg-s">sees only the two agents</text>
+</svg>
+<figcaption>One movement produces four instructions. The account owner never instructs the depository.</figcaption>
+</figure>
+<p>Without the MT540, an incoming asset lands in suspense at BNY and cannot be allocated, even though it is legally the client's. Whether BNY also inputs a matching instruction depends on the market: matching markets (ICSDs, T2S, CREST) need both sides; Fedwire is unilateral; DTC deliveries pass BNY's Receiver Authorized Delivery checks.</p>
+
+<h2 id="s4">4. Messages and transaction types</h2>
+<div class="scroll"><table>
+<tr><th>Message</th><th>Direction</th><th>Purpose</th></tr>
+<tr><td>MT540 / MT541</td><td>owner to agent</td><td>Receive free / against payment</td></tr>
+<tr><td>MT542 / MT543</td><td>owner to agent</td><td>Deliver free / against payment</td></tr>
+<tr><td>MT544 to MT547</td><td>agent to owner</td><td>Confirmations of the four above</td></tr>
+<tr><td>MT548</td><td>agent to owner</td><td>Acceptance, matching and settlement status, with reason codes (LACK, MONY, CLAC, ...)</td></tr>
+<tr><td>MT578</td><td>agent to owner</td><td>Allegement: the counterparty instructed and you did not</td></tr>
+<tr><td>MT530</td><td>owner to agent</td><td>Hold, release, priority, partial settlement changes</td></tr>
+<tr><td>MT535 to MT538</td><td>agent to owner</td><td>Holdings, transactions, pending items, sub-balance moves</td></tr>
+<tr><td>MT527 / MT558 / MT569</td><td>both</td><td>Triparty layer: instruction, status, collateral and exposure report</td></tr>
+<tr><td>MT564 / MT566</td><td>agent to owner</td><td>Corporate action notice and confirmation</td></tr>
+</table></div>
+<p>ISO 20022 equivalents for settlement are sese.023 (instruction), sese.024 (status) and sese.025 (confirmation). MT540 to MT548 remain live; Swift moved the 2026 securities standards changes to the first quarter of 2027.</p>
+
+<h3>Transaction type is a role, not a direction</h3>
+<p>Field <code>:22F::SETR//</code> states the business reason for the movement and the party's role in it. Direction comes from the message type. The ISO usage rules show the same code on the opening and closing legs:</p>
+<div class="scroll"><table>
+<tr><th>Code</th><th>Used by</th><th>Opening leg</th><th>Closing leg</th></tr>
+<tr><td>SECL</td><td>Securities lender</td><td>Deliver</td><td>Receive</td></tr>
+<tr><td>SECB</td><td>Securities borrower</td><td>Receive</td><td>Deliver</td></tr>
+<tr><td>COLO</td><td>Collateral giver</td><td>Deliver</td><td>Receive</td></tr>
+<tr><td>COLI</td><td>Collateral taker</td><td>Receive</td><td>Deliver</td></tr>
+<tr><td>TRPO / TRVO</td><td>Triparty repo seller / buyer</td><td>Deliver / Receive</td><td>Receive / Deliver</td></tr>
+<tr><td>REPU / RVPO</td><td>Repo seller / buyer</td><td>Deliver / Receive</td><td>Receive / Deliver</td></tr>
+<tr><td>OWNI</td><td colspan="3">Account transfer, one instructing party at one account servicer (e.g. BNY custody to BNY triparty)</td></tr>
+<tr><td>OWNE</td><td colspan="3">Account transfer across instructing parties or servicers (e.g. funding the longbox from another custodian)</td></tr>
+<tr><td>TRAD</td><td colspan="3">Trade: change of beneficial ownership, normally against payment</td></tr>
+</table></div>
+<div class="key flag"><p><strong>Consequence for the design:</strong> the transaction type belongs to the business event, not to the SSI. The SSI may carry only an account-transfer default (OWNI or OWNE). A TRAD code on a free transfer between a fund's own accounts, or COLI/COLO on an against-payment instruction, should be rejected before a message is built. In most markets SETR is not a matching field, so a wrong code settles silently.</p></div>
+
+<h2 id="s5">5. Free of payment and against payment</h2>
+<p>Margin and inventory moves are free of payment (MT540/542): nobody pays for collateral. Against-payment instructions (MT541/543) appear where cash really changes hands: outright purchases and sales on longbox inventory, bilateral or sponsored DVP repo, securities lending against cash collateral, dealer Treasury clearance and cross-border bond trades. Triparty repo is economically DVP but settles both legs on BNY's books, with no MT541/543.</p>
+<div class="scroll"><table>
+<tr><th>DvP model</th><th>Securities</th><th>Cash</th><th>Examples</th></tr>
+<tr><td>1</td><td>Gross, real time</td><td>Gross, real time</td><td>Fedwire Securities, T2S, Euroclear Bank</td></tr>
+<tr><td>2</td><td>Gross, through the day</td><td>Net, end of day</td><td>DTC</td></tr>
+<tr><td>3</td><td>Net</td><td>Net</td><td>CCP netting, e.g. NSCC</td></tr>
+</table></div>
+<p>What changes in MT541/543: an <code>:19A::SETT</code> amount is mandatory; matching markets compare currency and amount within a tolerance (T2S: €25 above €100,000, €2 below); cash parties are needed only for split cash settlement; and confirmations are MT545/547. For the SSI platform this means a DVP-specific SSI is needed only when the cash leg differs from the default, and currency joins the resolution key for those rows.</p>
+
+<h2 id="s6">6. Depositories and the cash leg</h2>
+<div class="scroll"><table>
+<tr><th>Depository</th><th>PSET</th><th>Party identifier</th><th>Matching</th><th>Cash</th></tr>
+<tr><td>Fedwire Securities</td><td><code>FRNYUS33</code></td><td>ABA routing number (<code>USFW</code>)</td><td>None, unilateral</td><td>Central bank money, gross, final when made</td></tr>
+<tr><td>DTC</td><td><code>DTCYUS33</code></td><td>Participant number (<code>DTCYID</code>)</td><td>Receiver authorisation (RAD)</td><td>Net at day end via settling banks; $1.8bn net debit cap per participant; collateral monitor</td></tr>
+<tr><td>Euroclear Bank</td><td><code>MGTCBEBE</code></td><td>Euroclear account number</td><td>Mandatory</td><td>Commercial bank money in 47 currencies</td></tr>
+<tr><td>Clearstream Banking</td><td><code>CEDELULL</code></td><td>Clearstream account number</td><td>Mandatory</td><td>Commercial bank money; Bridge to Euroclear</td></tr>
+<tr><td>T2S markets</td><td>per CSD</td><td>Local participant; instructing party BIC</td><td>Mandatory</td><td>Central bank money on dedicated cash accounts; all or none; 16:00 DVP cut-off</td></tr>
+<tr><td>CREST</td><td><code>CRSTGB22</code></td><td>CREST ID</td><td>Mandatory</td><td>Central bank money</td></tr>
+</table></div>
+<p>In every case the account owner never pays the depository: BNY pays from its own account at that infrastructure and books the result to the client, carrying the intraday credit risk if the client's cash is short.</p>
+
+<h2 id="s7">7. Clients, funds and who instructs</h2>
+<ul>
+  <li><strong>The fund is the principal.</strong> It owns the assets, has its own LEI and signs its own ISDA, CSA, GMRA or MRA. Sub-funds of an umbrella are ring-fenced, so their assets and longboxes never pool.</li>
+  <li><strong>The manager is the instructing party.</strong> It sends messages from its own BIC under a mandate; the fund is identified by account number in <code>:97A::SAFE</code>. The manager holds no asset accounts at BNY for client assets, only a relationship layer: connectivity, users, fees and a reporting hierarchy for viewing, not pooling.</li>
+  <li><strong>The fund appoints the custodian</strong> legally (board, trustee or management company); the manager usually runs the selection. For segregated mandates the asset owner dictates the custodian.</li>
+  <li><strong>SWIFT is optional for the client.</strong> Every principal needs an LEI and an account. Connectivity can be direct SWIFT, a service bureau, file transfer, the NEXEN portal or a third party instructing under mandate. The platform must not assume the account owner has a BIC.</li>
+  <li><strong>Securities lending makes a fund a receiver.</strong> A loan is title transfer; the borrower posts collateral to the lending fund, which sets the eligibility schedule and monitors but instructs nothing on the way in.</li>
+</ul>
+
+<h2 id="s8">8. SSI standards: ALERT and the DTCC market rules</h2>
+<p>DTCC ALERT stores accounts and SSIs keyed by <strong>country of settlement, security type and method</strong> (the final depository), organised under settlement models and attached to an account access code. Custodians can own and maintain the golden copy through Global Custodian Direct. ALERT is shaped around trades; BNY's triparty receipt instructions come from BNY's own onboarding pack, not from ALERT.</p>
+<p>DTCC's <em>Market Business Rules for Investment Managers</em> (publication AL996, 29 October 2025) lists every valid combination and what each needs. Analysis of that file:</p>
+<div class="scroll"><table>
+<tr><th>Measure</th><th>Value</th><th>Implication</th></tr>
+<tr><td>Valid combinations</td><td>503, all live</td><td>The dropdown source; anything else is invalid</td></tr>
+<tr><td>Settlement countries</td><td>119 (EU is DTCC's pseudo-country for the ICSDs)</td><td>Key on ISO code, not name</td></tr>
+<tr><td>Security types</td><td>11: EQU, COB, TRY, MMT standard; MBS, TBI specialist; EQA, CBA, TRA, MMA alternate; NSD undefined</td><td>DTCC recommends EQU, COB and TRY as the minimum per market</td></tr>
+<tr><td>Methods</td><td>173, each with exactly one PSET BIC</td><td>PSET is derived, never chosen</td></tr>
+<tr><td>Country and security type pairs</td><td>410: 339 with one method, 71 with a choice</td><td>Method auto-fills 83% of the time</td></tr>
+<tr><td>Methods spanning countries</td><td>Clearstream (EU, LU), Euroclear Bank (EU, IE), SIX SIS (CH, LI), Baltic depository (4), China routes (CN, HK)</td><td>Cascade must start with country</td></tr>
+<tr><td>Field rules</td><td>5,277 across ID1 to ID5 and the chain fields; 70 distinct market ID names</td><td>The form is generated per combination</td></tr>
+<tr><td>Conditional rules</td><td>2,242, written as prose</td><td>Need codifying into expressions</td></tr>
+</table></div>
+<p>US example: EQU and COB settle at DTC; TRY and MBS at Fedwire; MMT at either. US-EQU-DTC needs DTC number, agent ID and institution ID; US-TRY-FEDWIRE needs ABA number and Fed account, with an optional GSD number. Data quality issues found and handled are listed in the reference workbook's Data_Quality tab: Namibia's code "NA" read as blank by default tools, Hong Kong rows coded CN for Stock Connect, trailing spaces, mixed 8 and 11 character BICs.</p>
+
+<!-- ================================================================== -->
+<p class="part">Part II: Application design</p>
+
+<h2 id="s9">9. Goals, scope and users</h2>
+<div class="grid2">
+  <div class="card"><h4>Goals</h4><ul>
+    <li>Only market-valid instructions can exist.</li>
+    <li>Every change approved by a second person.</li>
+    <li>Deterministic resolution: same question, same answer, explainable.</li>
+    <li>Full history: what was valid on any date, and who changed it.</li>
+    <li>Vendor neutral: serves custodians, agents and asset managers alike.</li>
+  </ul></div>
+  <div class="card"><h4>Out of scope for version 1</h4><ul>
+    <li>Collateral allocation and eligibility (triparty agent's job).</li>
+    <li>Trade capture and matching.</li>
+    <li>FX and cash payment SSIs (planned extension).</li>
+    <li>Direct SWIFT connectivity; the platform hands rendered messages to an existing gateway.</li>
+  </ul></div>
+</div>
+<div class="scroll"><table>
+<tr><th>Role</th><th>Can do</th></tr>
+<tr><td>Maker</td><td>Create, edit and retire SSIs, accounts and participant accounts as change requests; run bulk imports</td></tr>
+<tr><td>Checker</td><td>Approve or reject other people's change requests; never their own</td></tr>
+<tr><td>Reference data admin</td><td>Load DTCC catalogue editions, codify field rules, enable markets and set defaults per tenant (also maker-checker)</td></tr>
+<tr><td>Viewer</td><td>Search, view history, run resolution tests</td></tr>
+<tr><td>Service account</td><td>Call the resolver and message builder from settlement systems</td></tr>
+</table></div>
+
+<h2 id="s10">10. Architecture</h2>
+<figure>
+<svg viewBox="0 0 640 336" role="img" aria-label="Portal and settlement systems call an SSI service, which uses a reference data loader, workflow, resolver and message builder over an Oracle database; messages go to a SWIFT gateway">
+  <rect x="40" y="12" width="250" height="48" class="svg-box"/>
+  <text x="165" y="33" text-anchor="middle" class="svg-t">Portal (web)</text>
+  <text x="165" y="50" text-anchor="middle" class="svg-s">setup, approvals, import, search</text>
+  <rect x="350" y="12" width="250" height="48" class="svg-box"/>
+  <text x="475" y="33" text-anchor="middle" class="svg-t">Settlement systems</text>
+  <text x="475" y="50" text-anchor="middle" class="svg-s">CollateralONE, custody, trading</text>
+  <line x1="165" y1="60" x2="165" y2="88" class="svg-line" marker-end="url(#ah)"/>
+  <line x1="475" y1="60" x2="475" y2="88" class="svg-line" marker-end="url(#ah)"/>
+  <rect x="20" y="92" width="600" height="150" class="svg-acc-box"/>
+  <text x="40" y="112" class="svg-t">SSI service (REST API)</text>
+  <rect x="40" y="124" width="132" height="50" class="svg-box"/><text x="106" y="145" text-anchor="middle" class="svg-t">SSI management</text><text x="106" y="161" text-anchor="middle" class="svg-s">keys, versions, chain</text>
+  <rect x="186" y="124" width="132" height="50" class="svg-box"/><text x="252" y="145" text-anchor="middle" class="svg-t">Workflow</text><text x="252" y="161" text-anchor="middle" class="svg-s">change requests</text>
+  <rect x="332" y="124" width="132" height="50" class="svg-box"/><text x="398" y="145" text-anchor="middle" class="svg-t">Resolver</text><text x="398" y="161" text-anchor="middle" class="svg-s">most specific wins</text>
+  <rect x="478" y="124" width="122" height="50" class="svg-box"/><text x="539" y="145" text-anchor="middle" class="svg-t">Message builder</text><text x="539" y="161" text-anchor="middle" class="svg-s">MT54x, sese</text>
+  <rect x="40" y="184" width="200" height="44" class="svg-box"/><text x="140" y="203" text-anchor="middle" class="svg-t">Validation engine</text><text x="140" y="219" text-anchor="middle" class="svg-s">field rules, formats, conditions</text>
+  <rect x="254" y="184" width="200" height="44" class="svg-box"/><text x="354" y="203" text-anchor="middle" class="svg-t">Reference data loader</text><text x="354" y="219" text-anchor="middle" class="svg-s">DTCC editions, diff, impact</text>
+  <rect x="468" y="184" width="132" height="44" class="svg-box"/><text x="534" y="203" text-anchor="middle" class="svg-t">Import</text><text x="534" y="219" text-anchor="middle" class="svg-s">Excel template</text>
+  <line x1="320" y1="242" x2="320" y2="270" class="svg-line" marker-end="url(#ah)"/>
+  <rect x="160" y="274" width="320" height="48" class="svg-box"/>
+  <text x="320" y="295" text-anchor="middle" class="svg-t">Oracle database</text>
+  <text x="320" y="312" text-anchor="middle" class="svg-s">ssi_pkg is the only write path · VPD · Flashback archive</text>
+  <line x1="600" y1="149" x2="626" y2="149" class="svg-dash"/>
+  <line x1="626" y1="149" x2="626" y2="298" class="svg-dash"/>
+  <line x1="626" y1="298" x2="482" y2="298" class="svg-dash" marker-end="url(#ah)"/>
+</svg>
+<figcaption>The message builder hands rendered instructions to the firm's existing SWIFT gateway; the platform itself does not connect to SWIFT.</figcaption>
+</figure>
+<ul>
+  <li><strong>One service, clear modules.</strong> Version 1 is a single deployable service with modular boundaries; split later only if load demands it.</li>
+  <li><strong>Database enforces the invariants</strong> that matter most (valid combination, no overlap, four eyes, tenant isolation), so a bug in the application layer cannot corrupt the data.</li>
+  <li><strong>Read path is hot, write path is rare.</strong> The resolver is called per settlement instruction and must be fast and cached by key and business date; changes are a handful per day per tenant.</li>
+</ul>
+
+<h2 id="s11">11. Data model</h2>
+<figure>
+<svg viewBox="0 0 640 420" role="img" aria-label="Reference tables, tenant and party tables, and SSI tables with their relationships">
+  <text x="20" y="18" class="svg-s">REFERENCE (DTCC catalogue)</text>
+  <rect x="20" y="26" width="110" height="34" class="svg-box"/><text x="75" y="47" text-anchor="middle" class="svg-t">ref_country</text>
+  <rect x="140" y="26" width="130" height="34" class="svg-box"/><text x="205" y="47" text-anchor="middle" class="svg-t">ref_security_type</text>
+  <rect x="280" y="26" width="110" height="34" class="svg-box"/><text x="335" y="47" text-anchor="middle" class="svg-t">ref_method</text>
+  <rect x="140" y="90" width="250" height="40" class="svg-acc-box"/><text x="265" y="108" text-anchor="middle" class="svg-t">ref_market_combination</text><text x="265" y="123" text-anchor="middle" class="svg-s">503 valid triples</text>
+  <rect x="420" y="90" width="200" height="40" class="svg-box"/><text x="520" y="108" text-anchor="middle" class="svg-t">ref_field_rule</text><text x="520" y="123" text-anchor="middle" class="svg-s">ID1 to ID5, chain fields</text>
+  <rect x="420" y="26" width="200" height="34" class="svg-box"/><text x="520" y="47" text-anchor="middle" class="svg-t">tenant_market_combination</text>
+  <line x1="75" y1="60" x2="180" y2="88" class="svg-line"/>
+  <line x1="205" y1="60" x2="230" y2="88" class="svg-line"/>
+  <line x1="335" y1="60" x2="320" y2="88" class="svg-line"/>
+  <line x1="390" y1="110" x2="418" y2="110" class="svg-line"/>
+  <line x1="520" y1="60" x2="380" y2="90" class="svg-line"/>
+  <text x="20" y="160" class="svg-s">PARTIES AND ACCOUNTS</text>
+  <rect x="20" y="168" width="90" height="34" class="svg-box"/><text x="65" y="189" text-anchor="middle" class="svg-t">tenant</text>
+  <rect x="120" y="168" width="90" height="34" class="svg-box"/><text x="165" y="189" text-anchor="middle" class="svg-t">client</text>
+  <rect x="220" y="168" width="90" height="34" class="svg-box"/><text x="265" y="189" text-anchor="middle" class="svg-t">fund</text>
+  <rect x="320" y="168" width="90" height="34" class="svg-box"/><text x="365" y="189" text-anchor="middle" class="svg-t">account</text>
+  <rect x="420" y="168" width="200" height="34" class="svg-box"/><text x="520" y="189" text-anchor="middle" class="svg-t">participant_account</text>
+  <rect x="420" y="214" width="200" height="34" class="svg-box"/><text x="520" y="235" text-anchor="middle" class="svg-t">institution</text>
+  <line x1="110" y1="185" x2="118" y2="185" class="svg-line"/>
+  <line x1="210" y1="185" x2="218" y2="185" class="svg-line"/>
+  <line x1="310" y1="185" x2="318" y2="185" class="svg-line"/>
+  <line x1="410" y1="185" x2="418" y2="185" class="svg-line"/>
+  <text x="414" y="164" text-anchor="middle" class="svg-s">account_participant</text>
+  <line x1="520" y1="202" x2="520" y2="212" class="svg-line"/>
+  <text x="20" y="282" class="svg-s">SETTLEMENT INSTRUCTIONS</text>
+  <rect x="140" y="290" width="160" height="40" class="svg-acc-box"/><text x="220" y="308" text-anchor="middle" class="svg-t">ssi_key</text><text x="220" y="323" text-anchor="middle" class="svg-s">scope + combination</text>
+  <rect x="340" y="290" width="160" height="40" class="svg-acc-box"/><text x="420" y="308" text-anchor="middle" class="svg-t">ssi_version</text><text x="420" y="323" text-anchor="middle" class="svg-s">effective dated</text>
+  <line x1="300" y1="310" x2="338" y2="310" class="svg-acc" marker-end="url(#aha)"/>
+  <line x1="220" y1="288" x2="240" y2="132" class="svg-dash"/>
+  <line x1="200" y1="288" x2="170" y2="204" class="svg-dash"/>
+  <rect x="20" y="360" width="110" height="34" class="svg-box"/><text x="75" y="381" text-anchor="middle" class="svg-t">ssi_party</text>
+  <rect x="140" y="360" width="150" height="34" class="svg-box"/><text x="215" y="381" text-anchor="middle" class="svg-t">ssi_market_identifier</text>
+  <rect x="300" y="360" width="90" height="34" class="svg-box"/><text x="345" y="381" text-anchor="middle" class="svg-t">ssi_cash</text>
+  <rect x="400" y="360" width="130" height="34" class="svg-box"/><text x="465" y="381" text-anchor="middle" class="svg-t">ssi_direction_attr</text>
+  <rect x="540" y="290" width="90" height="40" class="svg-box"/><text x="585" y="308" text-anchor="middle" class="svg-t">change_</text><text x="585" y="322" text-anchor="middle" class="svg-t">request</text>
+  <line x1="500" y1="310" x2="538" y2="310" class="svg-line"/>
+  <line x1="390" y1="330" x2="75" y2="358" class="svg-line"/>
+  <line x1="405" y1="330" x2="215" y2="358" class="svg-line"/>
+  <line x1="420" y1="330" x2="345" y2="358" class="svg-line"/>
+  <line x1="440" y1="330" x2="465" y2="358" class="svg-line"/>
+</svg>
+<figcaption>Shaded tables are the backbone. Dashed lines are foreign keys into reference and party data; <code>ssi_market_identifier</code> also references <code>ref_field_rule</code>, which says which slot and label each value answers. Full DDL in <code>db/</code>.</figcaption>
+</figure>
+
+<h3>Key design decisions</h3>
+<div class="scroll"><table>
+<tr><th>Decision</th><th>Why</th></tr>
+<tr><td>SSI key points to one <code>ref_market_combination</code> row</td><td>The database rejects any country, security type and method triple DTCC does not list.</td></tr>
+<tr><td>Three scope levels: client, fund, account</td><td>A manager-wide default with fund and account overrides keeps maintenance proportional to exceptions, not to funds.</td></tr>
+<tr><td>No direction in the key</td><td>The chain is the same arriving or leaving; duplicating it invites asymmetric routing. Exceptions live in <code>ssi_direction_attr</code>; one-way accounts use <code>permitted_direction</code>.</td></tr>
+<tr><td>Payment type ANY by default</td><td>A DVP row exists only where the cash leg genuinely differs; currency then joins the key.</td></tr>
+<tr><td>Key and version split</td><td>A stable identity to lock and reference, with effective-dated versions; past instructions can always be explained.</td></tr>
+<tr><td>Chain stored by semantic role</td><td>LOCAL_AGENT, GLOBAL_CUSTODIAN, INTERMEDIARY rather than REAG or BUYR; the tag is rendered per message, so ISO 20022 is a second mapping, not a second data set.</td></tr>
+<tr><td>Market identifiers as child rows tied to a field rule</td><td>70 different identifiers (DTC #, ABA #, Crest ID, NIN, SEBI# ...), up to five per combination, cannot be fixed columns.</td></tr>
+<tr><td>Participant accounts per business line</td><td>Captures the BNY custody versus triparty participant split, and lets the system decide whether a transfer is a book entry or a depository settlement.</td></tr>
+<tr><td>Perspective per tenant</td><td><code>tenant_institution.relationship = SELF</code> says who "we" are; institutions themselves are neutral and shared.</td></tr>
+<tr><td>Transaction type outside the SSI</td><td><code>event_setr_mapping</code> derives SETR from event, party role and leg.</td></tr>
+</table></div>
+
+<h3>Table catalogue</h3>
+<div class="scroll"><table>
+<tr><th>Table</th><th>Holds</th><th>Notable constraints</th></tr>
+<tr><td>ref_country, ref_security_type, ref_method</td><td>DTCC codes; security types roll up (EQA to EQU)</td><td>Loaded from the catalogue only</td></tr>
+<tr><td>ref_market_combination</td><td>Valid triples, variant label, guidance, DTCC date</td><td>Unique triple; WITHDRAWN never deleted</td></tr>
+<tr><td>ref_field_rule</td><td>Per combination: field, label, role, requirement level, verbatim DTCC text, codified condition and regex</td><td>Unique per combination and field</td></tr>
+<tr><td>tenant_market_combination</td><td>Which combinations a tenant offers, and its default method</td><td>One default per country and security type (enforced in the package)</td></tr>
+<tr><td>tenant, institution, tenant_institution</td><td>Tenancy and neutral parties</td><td>BIC format check</td></tr>
+<tr><td>participant_account</td><td>An institution's account at a depository, per business line</td><td>Unique per scheme and value</td></tr>
+<tr><td>client, fund, account, account_participant</td><td>Ownership hierarchy and which participant account each account settles under</td><td>Segregated accounts need a counterparty</td></tr>
+<tr><td>ssi_key</td><td>Scope, combination, payment type, currency</td><td>Scope check; unique via virtual columns (Oracle ignores NULLs in unique keys)</td></tr>
+<tr><td>ssi_version</td><td>Validity window, status, permitted direction, maker and checker</td><td>No overlap (package lock plus partial index); checker differs from maker</td></tr>
+<tr><td>ssi_party, ssi_market_identifier, ssi_cash, ssi_direction_attr</td><td>Chain, market IDs, cash leg, directional exceptions</td><td>Children of a version, so history is preserved</td></tr>
+<tr><td>role_mapping, event_setr_mapping</td><td>Rendering rules (seeded)</td><td>Reference data, maker-checker on change</td></tr>
+<tr><td>transfer_route</td><td>Named account pairs, e.g. custody to longbox</td><td>From differs from to</td></tr>
+<tr><td>change_request</td><td>Proposed change as JSON, maker, checker, status, batch</td><td>Four-eyes check</td></tr>
+</table></div>
+
+<h2 id="s12">12. Reference data management</h2>
+<p>Reference data has three layers, and the portal reads only the top one:</p>
+<ol>
+  <li><strong>DTCC catalogue</strong>: countries, security types, methods, combinations and field rules, loaded from each DTCC edition into staging, compared with the current one, then published. The build script is in <code>tools/build_reference_data.py</code>.</li>
+  <li><strong>Codified rules</strong>: your team turns DTCC prose into <code>condition_expr</code> and <code>validation_regex</code>, starting with the markets you use. DTCC text is kept verbatim beside it.</li>
+  <li><strong>Tenant layer</strong>: which combinations each tenant offers (for example only markets BNY's triparty platform supports) and the default method for each of the 71 pairs with a choice. DTCC publishes no defaults in this file.</li>
+</ol>
+<div class="scroll"><table>
+<tr><th>Catalogue change</th><th>Effect</th></tr>
+<tr><td>New combination</td><td>Available once a tenant enables it</td></tr>
+<tr><td>Combination withdrawn</td><td>Marked WITHDRAWN; new SSIs blocked; live SSIs listed in an impact report for migration</td></tr>
+<tr><td>Field rule tightened</td><td>Live SSIs that fail the new rule flagged; they stay usable until a dated cut-over</td></tr>
+<tr><td>PSET BIC or depository renamed</td><td>Applied on publish; rendered messages pick it up automatically</td></tr>
+</table></div>
+
+<h2 id="s13">13. Portal screens and behaviour</h2>
+<h3>SSI setup: a cascade, then a generated form</h3>
+<figure>
+<svg viewBox="0 0 640 120" role="img" aria-label="Country, then security type, then method, then a field form generated from the rules">
+  <rect x="10" y="24" width="140" height="58" class="svg-acc-box"/><text x="80" y="48" text-anchor="middle" class="svg-t">Country</text><text x="80" y="66" text-anchor="middle" class="svg-s">enabled for tenant</text>
+  <rect x="170" y="24" width="140" height="58" class="svg-acc-box"/><text x="240" y="48" text-anchor="middle" class="svg-t">Security type</text><text x="240" y="66" text-anchor="middle" class="svg-s">standard types first</text>
+  <rect x="330" y="24" width="140" height="58" class="svg-acc-box"/><text x="400" y="48" text-anchor="middle" class="svg-t">Method</text><text x="400" y="66" text-anchor="middle" class="svg-s">locked if only one</text>
+  <rect x="490" y="24" width="140" height="58" class="svg-acc-box"/><text x="560" y="48" text-anchor="middle" class="svg-t">Field form</text><text x="560" y="66" text-anchor="middle" class="svg-s">from field rules</text>
+  <line x1="150" y1="53" x2="168" y2="53" class="svg-acc" marker-end="url(#aha)"/>
+  <line x1="310" y1="53" x2="328" y2="53" class="svg-acc" marker-end="url(#aha)"/>
+  <line x1="470" y1="53" x2="488" y2="53" class="svg-acc" marker-end="url(#aha)"/>
+  <text x="400" y="104" text-anchor="middle" class="svg-s">PSET and depository name shown read only</text>
+</svg>
+</figure>
+<ol>
+  <li><strong>Scope</strong>: client, fund or account, chosen first so the screen can show what this SSI would override and what would override it.</li>
+  <li><strong>Country</strong>: searchable by name or ISO code, restricted to combinations the tenant has enabled.</li>
+  <li><strong>Security type</strong>: filtered to the country; standard types first, alternates labelled.</li>
+  <li><strong>Method</strong>: auto-filled and locked when only one exists. When there is a choice, show each option with its variant (T2S, local regime, alternate type, Stock Connect, Bond Connect), preselect the tenant default and show DTCC's guidance beside it.</li>
+  <li><strong>Chain and identifiers</strong>: rendered from <code>ref_field_rule</code>. Not-applicable fields are hidden; mandatory fields block submission; recommended fields warn; conditional fields are evaluated live as the user types; format hints come from DTCC's wording.</li>
+  <li><strong>Validity and options</strong>: valid from, valid to, permitted direction, payment type and cash leg only when DVP is chosen.</li>
+  <li><strong>Submit</strong> creates a change request, not an SSI.</li>
+</ol>
+<p>The UI reads <code>reference-data/ssi_market_cascade.json</code> (or the equivalent API) so the cascade works without a round trip per selection.</p>
+<h3>Other screens</h3>
+<div class="scroll"><table>
+<tr><th>Screen</th><th>Purpose</th></tr>
+<tr><td>SSI search</td><td>Filter by client, fund, account, country, method, status and validity date; show the effective SSI per market for an account</td></tr>
+<tr><td>SSI detail and history</td><td>All versions on a timeline, with maker, checker and change reason; compare any two</td></tr>
+<tr><td>Approval queue</td><td>Pending change requests for the checker, each with a field-level diff against the current version and the validation results</td></tr>
+<tr><td>Resolution tester</td><td>Enter account, market, payment type, direction and date; see which SSI wins and why, including the candidates it beat</td></tr>
+<tr><td>Bulk import</td><td>Upload the Excel template, see row-level results, submit valid rows as one batch of change requests</td></tr>
+<tr><td>Market administration</td><td>Enable combinations, set defaults, review catalogue diffs and impact reports</td></tr>
+<tr><td>Accounts and participants</td><td>Maintain accounts, platforms and participant accounts per business line</td></tr>
+</table></div>
+
+<h2 id="s14">14. Workflows</h2>
+<h3>Maker-checker</h3>
+<figure>
+<svg viewBox="0 0 640 170" role="img" aria-label="Change request states: draft, pending, then approved or rejected or withdrawn; approval activates the version and supersedes the old one">
+  <rect x="10" y="60" width="100" height="44" class="svg-box"/><text x="60" y="87" text-anchor="middle" class="svg-t">Draft</text>
+  <rect x="150" y="60" width="110" height="44" class="svg-acc-box"/><text x="205" y="80" text-anchor="middle" class="svg-t">Pending</text><text x="205" y="96" text-anchor="middle" class="svg-s">awaiting checker</text>
+  <rect x="320" y="10" width="140" height="44" class="svg-acc-box"/><text x="390" y="30" text-anchor="middle" class="svg-t">Approved</text><text x="390" y="46" text-anchor="middle" class="svg-s">version ACTIVE</text>
+  <rect x="320" y="72" width="140" height="44" class="svg-box"/><text x="390" y="99" text-anchor="middle" class="svg-t">Rejected</text>
+  <rect x="320" y="122" width="140" height="44" class="svg-box"/><text x="390" y="149" text-anchor="middle" class="svg-t">Withdrawn by maker</text>
+  <rect x="500" y="10" width="130" height="44" class="svg-box"/><text x="565" y="30" text-anchor="middle" class="svg-t">Old version</text><text x="565" y="46" text-anchor="middle" class="svg-s">SUPERSEDED</text>
+  <line x1="110" y1="82" x2="148" y2="82" class="svg-line" marker-end="url(#ah)"/>
+  <line x1="260" y1="76" x2="318" y2="36" class="svg-acc" marker-end="url(#aha)"/>
+  <line x1="260" y1="88" x2="318" y2="94" class="svg-line" marker-end="url(#ah)"/>
+  <line x1="240" y1="104" x2="318" y2="142" class="svg-line" marker-end="url(#ah)"/>
+  <line x1="460" y1="32" x2="498" y2="32" class="svg-line" marker-end="url(#ah)"/>
+</svg>
+<figcaption>Approval runs in one transaction under a row lock on the SSI key: overlap check, close the predecessor, activate.</figcaption>
+</figure>
+<ul>
+  <li>The checker sees a field-level diff, validation results and the resolution impact ("this will replace the SSI used by 14 accounts").</li>
+  <li>The database refuses approval by the maker, and refuses an approval that would create overlapping active versions.</li>
+  <li>Edits never change an active version; they create a new version with a later start date. Rejection leaves the current version untouched.</li>
+  <li>Retiring an SSI is also a change request, setting <code>valid_to</code>.</li>
+</ul>
+<h3>Bulk import</h3>
+<ol>
+  <li>Upload <code>templates/SSI_import_template_v2.xlsx</code>; reject the file if any <code>is_sample = YES</code> rows remain.</li>
+  <li>Validate every row: combination exists and is enabled, scope references exist, field rules satisfied, dates valid, no two rows share a key and overlapping dates, no clash with live SSIs.</li>
+  <li>If any row fails, reject the whole file with a row-level report. Partial loads leave the data in a half-migrated state that is hard to reason about.</li>
+  <li>On success, raise one change request per row under a shared batch id; checkers can approve per row or per batch, still under four eyes.</li>
+</ol>
+<h3>Catalogue refresh</h3>
+<ol>
+  <li>Load the new DTCC edition into staging with literal codes preserved (Namibia is "NA").</li>
+  <li>Diff against the published catalogue: added, withdrawn and changed combinations and rules.</li>
+  <li>Produce the impact report on live SSIs; reference data admin reviews.</li>
+  <li>Publish under maker-checker; withdrawn rows stay for history.</li>
+</ol>
+
+<h2 id="s15">15. Resolving an SSI</h2>
+<p>Inputs: tenant, account, country, security type, method, payment type, currency, direction, business date. Output: one SSI version, or a clear error.</p>
+<ol>
+  <li>Find the account's fund and client.</li>
+  <li>Walk the security type up its hierarchy (EQA to EQU) so a broader SSI can serve a narrower request.</li>
+  <li>Candidates: active versions valid on the business date, matching country and method, payment type equal or ANY, currency equal or blank, scope matching the account, fund or client, and permitted for the direction.</li>
+  <li>Score: account 300, fund 200, client 100; minus 10 per security-type level walked; plus 5 for exact payment type; plus 2 for exact currency.</li>
+  <li>Return the top candidate. If the top two tie, raise an ambiguity error. Never guess: silent fallback is how an asset lands at the wrong depository.</li>
+</ol>
+<p>Implementation: <code>ssi_pkg.resolve</code> in <code>db/03_ssi_pkg.sql</code>. Cache results by key and business date; invalidate on approval.</p>
+<p>When no method is supplied (a trade arrives with only an ISIN), derive country and security type from instrument data, then use the tenant default method for that pair. Treat a missing default as an error, not a reason to pick one.</p>
+
+<h2 id="s16">16. Generating settlement messages</h2>
+<h3>From chain role to MT tag</h3>
+<p>A movement needs two SSIs: the instructing account's own SSI (for its safekeeping account) and the counterparty side's SSI (rendered as the other side). The counterparty chain becomes the receiving side in a delivery and the delivering side in a receipt:</p>
+<div class="scroll"><table>
+<tr><th>Chain role</th><th>In MT542/543 (receiving side)</th><th>In MT540/541 (delivering side)</th></tr>
+<tr><td>Depository (from method)</td><td><code>:95P::PSET</code></td><td><code>:95P::PSET</code></td></tr>
+<tr><td>LOCAL_AGENT</td><td><code>:95P::REAG</code> or <code>:95R::REAG/scheme/</code>, with its SAFE</td><td><code>:95P::DEAG</code> or <code>:95R::DEAG</code></td></tr>
+<tr><td>INTERMEDIARY</td><td><code>:95P::RECU</code></td><td><code>:95P::DECU</code></td></tr>
+<tr><td>GLOBAL_CUSTODIAN</td><td><code>:95P::BUYR</code></td><td><code>:95P::SELL</code></td></tr>
+<tr><td>ACCOUNT_OWNER</td><td><code>:97A::SAFE</code> in the BUYR block</td><td><code>:97A::SAFE</code> in the SELL block</td></tr>
+<tr><td>Own account</td><td colspan="2"><code>:97A::SAFE</code> in sequence C</td></tr>
+</table></div>
+<p>Market identifiers map per field rule: at DTC the participant number becomes <code>:95R::REAG/DTCYID/</code>; at Fedwire the ABA becomes <code>:95R::REAG/USFW/</code>. Placements other than these are recorded in <code>ref_field_rule.mt54x_placement</code> as suggestions to confirm against BNY's message specification.</p>
+<h3>Transaction type and payment</h3>
+<ul>
+  <li>SETR from <code>event_setr_mapping</code> by event type, party role and leg; for account transfers, the SSI default (OWNI or OWNE) applies.</li>
+  <li>Message type from direction and payment type: FOP to MT540/542, DVP to MT541/543 with mandatory <code>:19A::SETT</code>.</li>
+  <li>Partial settlement, beneficial ownership and repo indicators in <code>:22F::</code> come from the event, not the SSI.</li>
+</ul>
+<h3>Worked example: custody to triparty at DTC</h3>
+<p>Account CUST-88421 (BNY custody participant) moves corporate bonds to LONGBOX-002 (BNY triparty participant). The accounts sit under different DTC participant numbers, so <code>transfer_route</code> marks it as a depository settlement, event ACCOUNT_TRANSFER_INTERNAL, SETR OWNI. The builder resolves both SSIs for US-COB-DTC and emits:</p>
+<pre><code>MT542 to custody                       MT540 to triparty
+:97A::SAFE//CUST-88421                 :97A::SAFE//LONGBOX-002
+:22F::SETR//OWNI                       :22F::SETR//OWNI
+:95R::REAG/DTCYID/&lt;triparty part #&gt;   :95R::DEAG/DTCYID/&lt;custody part #&gt;
+:95P::PSET//DTCYUS33                   :95P::PSET//DTCYUS33</code></pre>
+<p>If both accounts resolved to the same participant account, the builder would instead emit an internal transfer with no depository leg.</p>
+<h3>ISO 20022</h3>
+<p>The same resolved chain renders to sese.023 through a second role mapping; the stored data does not change.</p>
+
+<h2 id="s17">17. Validation rules</h2>
+<div class="scroll"><table>
+<tr><th>Rule</th><th>Where enforced</th><th>Severity</th></tr>
+<tr><td>Combination exists in the catalogue and is enabled for the tenant</td><td>Database FK; package</td><td>Block</td></tr>
+<tr><td>Scope references exist and match the scope level</td><td>Check constraint</td><td>Block</td></tr>
+<tr><td>Mandatory field rules satisfied</td><td>Validation engine</td><td>Block</td></tr>
+<tr><td>Conditional rules satisfied (codified)</td><td>Validation engine</td><td>Block</td></tr>
+<tr><td>Recommended fields present</td><td>Validation engine</td><td>Warn</td></tr>
+<tr><td>Formats: BIC pattern, codified regex per field</td><td>Constraint; engine</td><td>Block</td></tr>
+<tr><td>No overlapping active versions for a key</td><td>Package under lock; partial unique index</td><td>Block</td></tr>
+<tr><td>Checker is not the maker</td><td>Check constraint; package</td><td>Block</td></tr>
+<tr><td>Currency only on DVP rows</td><td>Check constraint</td><td>Block</td></tr>
+<tr><td>Local agent differs from counterparty local agent on a transfer route, unless internal book</td><td>Builder</td><td>Block</td></tr>
+<tr><td>COLI/COLO not on DVP; TRAD not on own-account transfers</td><td>Event mapping</td><td>Block</td></tr>
+<tr><td>Combination withdrawn by DTCC</td><td>Catalogue refresh</td><td>Warn, then block after cut-over</td></tr>
+</table></div>
+
+<h2 id="s18">18. Security, tenancy and audit</h2>
+<ul>
+  <li><strong>Tenant isolation in the database</strong> with Oracle Virtual Private Database: the service sets the tenant in an application context per request, and a policy predicate filters every table. A portal bug cannot cross tenants.</li>
+  <li><strong>Single write path:</strong> the application has EXECUTE on <code>ssi_pkg</code> and no DML grants on tables.</li>
+  <li><strong>History:</strong> effective dating answers "what was valid on date X"; Oracle Flashback Data Archive answers "what did the table look like at time T" with no trigger code; <code>change_request</code> records intent and reasons.</li>
+  <li><strong>Authentication:</strong> firm SSO; roles mapped from directory groups; service accounts for system callers with resolve-only rights.</li>
+  <li><strong>Sensitive data:</strong> account numbers and investor IDs are confidential reference data; encrypt at rest and mask in logs.</li>
+</ul>
+
+<h2 id="s19">19. Service interface</h2>
+<div class="scroll"><table>
+<tr><th>Method and path</th><th>Purpose</th></tr>
+<tr><td><code>GET /reference/cascade</code></td><td>Country, security type and method tree for the tenant, with variants and guidance</td></tr>
+<tr><td><code>GET /reference/combinations/{id}/field-rules</code></td><td>Fields, levels, conditions and formats for the form</td></tr>
+<tr><td><code>GET /ssis?accountId=&amp;country=&amp;status=&amp;asOf=</code></td><td>Search</td></tr>
+<tr><td><code>GET /ssis/{keyId}/versions</code></td><td>History</td></tr>
+<tr><td><code>POST /change-requests</code></td><td>Propose create, update or retire (body is the full proposed state)</td></tr>
+<tr><td><code>POST /change-requests/{id}/approve</code> · <code>/reject</code> · <code>/withdraw</code></td><td>Workflow actions</td></tr>
+<tr><td><code>POST /imports</code></td><td>Upload a template; returns a validation report and batch id</td></tr>
+<tr><td><code>POST /resolve</code></td><td>Resolve for account, market, payment type, direction and date; returns the version and the reasoning</td></tr>
+<tr><td><code>POST /messages/render</code></td><td>Render MT54x or sese.023 for an event and transfer route</td></tr>
+</table></div>
+
+<h2 id="s20">20. Delivery plan</h2>
+<div class="scroll"><table>
+<tr><th>Phase</th><th>Scope</th><th>Exit criterion</th></tr>
+<tr><td>1. Foundations</td><td>Reference schema and DTCC load; parties, accounts, participant accounts; tenant layer</td><td>Catalogue loaded and diffable; BNY custody and triparty participants modelled</td></tr>
+<tr><td>2. SSI core</td><td>Keys, versions, chain, identifiers; <code>ssi_pkg</code>; resolver with ambiguity tests</td><td>Resolution test suite passes, including deliberate ties</td></tr>
+<tr><td>3. Portal</td><td>Cascade form, generated fields, approval queue with diff, history, resolution tester</td><td>A maker and a checker complete setup for US, EU and GB markets end to end</td></tr>
+<tr><td>4. Bulk and refresh</td><td>Excel import, batch approval, catalogue refresh with impact report</td><td>A 300-fund client loads in one batch</td></tr>
+<tr><td>5. Messages</td><td>Event mapping, MT540 to MT543 rendering, transfer routes, internal-book detection</td><td>Rendered pairs match BNY's specification for the pilot markets</td></tr>
+<tr><td>6. Extensions</td><td>ISO 20022 rendering; FX and cash SSIs; ALERT synchronisation</td><td>Agreed per tenant</td></tr>
+</table></div>
+
+<h2 id="s21">21. Open items and assumptions</h2>
+<ul>
+  <li><strong>Confirm with BNY:</strong> entity BICs and participant numbers per market and business line; expected SETR codes per flow; whether custody and triparty share participant accounts in each market; cut-offs and allocation cycle times.</li>
+  <li><strong>Interpretations to verify:</strong> security type descriptions beyond EQU, COB, TRY and MMT; NSD, which DTCC does not define in this file; the chain-role and MT placement columns in the field rules.</li>
+  <li><strong>Defaults:</strong> operations must choose a tenant default for each of the 71 country and security type pairs with several methods.</li>
+  <li><strong>Codifying conditions:</strong> 2,242 conditional rules are prose; prioritise the markets in use.</li>
+  <li><strong>DTCC content:</strong> the reference data derives from a DTCC publication marked all rights reserved and includes guidance text; keep this repository private or remove the verbatim text before sharing outside the firm.</li>
+  <li><strong>Untested code:</strong> the SQL parses with an Oracle-dialect parser (the virtual column keyword aside) but has not been compiled on a database; the package needs unit tests before use.</li>
+  <li><strong>Assumed platform:</strong> Oracle 19c or later; firm SSO; an existing SWIFT gateway.</li>
+</ul>
+
+<h2 id="s22">22. Artifacts and glossary</h2>
+<div class="scroll"><table>
+<tr><th>Artifact</th><th>Purpose</th></tr>
+<tr><td><a href="reference-notes.html">docs/reference-notes.html</a></td><td>Detailed domain notes: triparty mechanics, CSD settlement, clients and funds, ALERT, transaction types</td></tr>
+<tr><td><a href="../db/01_reference_schema_and_data.sql">db/01_reference_schema_and_data.sql</a></td><td>Reference tables and DTCC AL996 data (6,000+ inserts)</td></tr>
+<tr><td><a href="../db/02_core_schema.sql">db/02_core_schema.sql</a></td><td>Core schema with seed rows for role and event mappings</td></tr>
+<tr><td><a href="../db/03_ssi_pkg.sql">db/03_ssi_pkg.sql</a></td><td>Write path, approval and resolver</td></tr>
+<tr><td><a href="../reference-data/SSI_market_reference_DTCC_AL996.xlsx">reference-data/SSI_market_reference_DTCC_AL996.xlsx</a></td><td>Reference data for review: countries, types, methods, combinations, cascade, field rules, data quality</td></tr>
+<tr><td><a href="../reference-data/ssi_market_cascade.json">reference-data/ssi_market_cascade.json</a></td><td>Cascade tree for the UI</td></tr>
+<tr><td><a href="../templates/SSI_import_template_v2.xlsx">templates/SSI_import_template_v2.xlsx</a></td><td>Bulk import template with combination dropdown and looked-up PSET and ID labels</td></tr>
+<tr><td><a href="../tools/build_reference_data.py">tools/build_reference_data.py</a></td><td>Rebuilds the reference data from a new DTCC edition</td></tr>
+<tr><td><a href="../tools/build_import_template.py">tools/build_import_template.py</a></td><td>Rebuilds the import template from the reference data</td></tr>
+</table></div>
+<div class="scroll"><table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>SSI</td><td>Standing settlement instruction: where securities go for an account in a market</td></tr>
+<tr><td>Combination</td><td>DTCC country, security type and method triple, e.g. US-TRY-FEDWIRE</td></tr>
+<tr><td>Method</td><td>DTCC's term for the final depository</td></tr>
+<tr><td>PSET</td><td>Place of settlement, the depository's BIC</td></tr>
+<tr><td>Longbox</td><td>A client's unencumbered inventory pool in triparty</td></tr>
+<tr><td>Participant account</td><td>An institution's account at a depository; one institution may have several</td></tr>
+<tr><td>Maker-checker</td><td>Four-eyes control: one person proposes, another approves</td></tr>
+<tr><td>SETR</td><td>Transaction type in field 22F, describing the business reason and role</td></tr>
+<tr><td>FOP / DVP</td><td>Free of payment / delivery versus payment</td></tr>
+<tr><td>RQV</td><td>Required value of collateral for a trade or margin call</td></tr>
+<tr><td>VPD</td><td>Oracle Virtual Private Database, row-level security</td></tr>
+</table></div>
+
+<footer>
+<p>Sources behind the domain sections include BNY product material on triparty, CollateralONE and Fed-eligible clearance; Swift and ISO 15022 standards for MT540 to MT548 and field 22F; DTCC ALERT documentation and the Market Business Rules for Investment Managers (AL996, 29 October 2025); BIS/CPSS on delivery versus payment; the Federal Reserve on Fedwire Securities; SEC filings on DTC risk controls; ECB on T2S; Euroclear; and the New York Fed on tri-party repo reform. Identifiers in examples are illustrative; verify against BNY's SSI documentation before instructing.</p>
+</footer>
+</div>
+</body>
 </html>
